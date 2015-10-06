@@ -18,8 +18,8 @@ class EventHelper {
     var accessGranted = false
     var accessRequested = false
         
-    func requestAccess(completion: (Bool, NSError!) -> Void) {
-        eventStore.requestAccessToEntityType(EKEntityTypeReminder, completion: { (granted : Bool, error : NSError!) -> Void in
+    func requestAccess(completion: (Bool, NSError?) -> Void) {
+        eventStore.requestAccessToEntityType(EKEntityType.Reminder, completion: { (granted : Bool, error : NSError?) -> Void in
             self.accessGranted = granted
             self.accessRequested = false
             

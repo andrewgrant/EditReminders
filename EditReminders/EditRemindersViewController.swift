@@ -29,7 +29,7 @@ class EditReminderViewController : UITableViewController
         if reminder == nil {
             // If no reminder provided create a new one and set buttons to save/cancel
             reminder = EKReminder(eventStore: EventHelper.sharedInstance.eventStore)
-            reminder.calendar = owningCalendar
+            reminder.calendar = owningCalendar!
             reminder.title = self.defaultReminderName
             self.navigationItem.rightBarButtonItem = self.saveButton
             self.navigationItem.leftBarButtonItem = self.cancelButton
@@ -51,18 +51,16 @@ class EditReminderViewController : UITableViewController
         
         if let reminder = self.reminder {
             
-            if count(self.eventNameTextField.text) > 0 {
-                reminder.title = eventNameTextField.text
+            if self.eventNameTextField.text?.characters.count > 0 {
+                reminder.title = eventNameTextField.text!
             }
             
             reminder.priority = prioritySegments.selectedSegmentIndex
-
-            var error : NSError?
             
-            EventHelper.sharedInstance.eventStore.saveReminder(reminder, commit: true, error: &error)
-            
-            if error != nil {
-                let msg = UIAlertController(title: nil, message: "Error Saving Reminder: " + error!.description, preferredStyle: UIAlertControllerStyle.Alert)
+            do {
+                try EventHelper.sharedInstance.eventStore.saveReminder(reminder, commit: true)
+            } catch let error as NSError {
+                let msg = UIAlertController(title: nil, message: "Error Saving Reminder: " + error.description, preferredStyle: UIAlertControllerStyle.Alert)
                 self.presentViewController(msg, animated: true, completion: nil)
             }
         }
@@ -80,7 +78,7 @@ class EditReminderViewController : UITableViewController
     
     // MARK: - Actions
     @IBAction func onSave(sender : UIBarButtonItem?) {
-        if count(self.eventNameTextField.text) == 0 {
+        if self.eventNameTextField.text?.characters.count == 0 {
             self.eventNameTextField.text = self.defaultReminderName
         }
         self.navigationController?.popViewControllerAnimated(true)

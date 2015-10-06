@@ -25,7 +25,7 @@ class BaseListsViewController : UITableViewController
         self.refreshControl = rc
                 
         if EventHelper.sharedInstance.accessRequested == false {
-            EventHelper.sharedInstance.requestAccess({ (granted : Bool, error : NSError!) -> Void in
+            EventHelper.sharedInstance.requestAccess({ (granted : Bool, error : NSError?) -> Void in
                 self.onRefresh()
             })
         }
@@ -42,17 +42,12 @@ class BaseListsViewController : UITableViewController
     // MARK: - Responders
     
     func onRefresh()
-    {
-        var calendarEntries = [EKCalendar : [EKReminder]]()
+    {        
+        let calendars = EventHelper.sharedInstance.eventStore.calendarsForEntityType(EKEntityType.Reminder)
         
-        let objs = EventHelper.sharedInstance.eventStore.calendarsForEntityType(EKEntityTypeReminder)
-        
-        if let calendars = objs as? [EKCalendar] {
-            
-            self.sortedLists = calendars.sorted({ (lhs, rhs) -> Bool in
-                lhs.title < rhs.title
-            })
-        }
+        self.sortedLists = calendars.sort({ (lhs, rhs) -> Bool in
+            lhs.title < rhs.title
+        })
         
         dispatch_async(dispatch_get_main_queue(), { () -> Void in
             self.tableView.reloadData()
@@ -81,7 +76,7 @@ class BaseListsViewController : UITableViewController
     
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         
-        var cell = tableView.dequeueReusableCellWithIdentifier("ReminderList") as? UITableViewCell
+        let cell = tableView.dequeueReusableCellWithIdentifier("ReminderList")
         
         let cal = sortedLists[indexPath.row]
         

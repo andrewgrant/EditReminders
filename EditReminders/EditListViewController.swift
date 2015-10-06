@@ -35,15 +35,14 @@ class EditListViewController : UITableViewController
     override func viewWillDisappear(animated: Bool) {
         super.viewWillDisappear(animated)
         
-        if editList != nil && count(titleTextField.text) > 0 {
-            editList.title = titleTextField.text
+        if editList != nil && titleTextField.text?.characters.count > 0 {
+            editList.title = titleTextField.text!
             
-            var error : NSError?
-            
-            EventHelper.sharedInstance.eventStore.saveCalendar(editList, commit: true, error: &error)
-            
-            if error != nil {
-                println(error!.description)
+            do {
+                try EventHelper.sharedInstance.eventStore.saveCalendar(editList, commit: true)
+            } catch let error as NSError {
+                print(error.description)
+
             }
         }
     }
@@ -52,16 +51,16 @@ class EditListViewController : UITableViewController
     
     @IBAction func onSave(sender : UIBarButtonItem)
     {
-        if count(titleTextField.text) > 0 {
+        if titleTextField.text?.characters.count > 0 {
             
             // create a new list, it will be saved when we disappear
-            editList = EKCalendar(forEntityType: EKEntityTypeReminder, eventStore: EventHelper.sharedInstance.eventStore)
+            editList = EKCalendar(forEntityType: EKEntityType.Reminder, eventStore: EventHelper.sharedInstance.eventStore)
             
-            for source in EventHelper.sharedInstance.eventStore.sources() {
+            for source in EventHelper.sharedInstance.eventStore.sources {
                 
-                let type : EKSourceType = source.sourceType!
-                if type.value == EKSourceTypeLocal.value {
-                    editList.source = source as! EKSource
+                let type : EKSourceType = source.sourceType
+                if type.rawValue == EKSourceType.Local.rawValue {
+                    editList.source = source
                     break
                 }
             }

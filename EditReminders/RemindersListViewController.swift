@@ -26,8 +26,8 @@ class RemindersListViewController : UITableViewController, UITextFieldDelegate
         self.title = calendar?.title
         
         let rc = UIRefreshControl()
-        refreshControl?.addTarget(self, action: Selector("onRefresh:"), forControlEvents: UIControlEvents.ValueChanged)
-        self.refreshControl = refreshControl
+        rc.addTarget(self, action: Selector("onRefresh:"), forControlEvents: UIControlEvents.ValueChanged)
+        self.refreshControl = rc
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -46,7 +46,7 @@ class RemindersListViewController : UITableViewController, UITextFieldDelegate
                 controller.reminder = self.reminders[indexPath.row]
             }
             else if let tf = sender as? UITextField {
-                controller.defaultReminderName = tf.text
+                controller.defaultReminderName = tf.text!
             }
             
             controller.owningCalendar = self.calendar
@@ -69,7 +69,10 @@ class RemindersListViewController : UITableViewController, UITextFieldDelegate
         reminder.completed = !reminder.completed
         sender.setTitle(reminder.completed ? "🔳" : "◻️", forState: UIControlState.Normal)
         
-        EventHelper.sharedInstance.eventStore.saveReminder(reminder, commit: true, error: nil)
+        do {
+            try EventHelper.sharedInstance.eventStore.saveReminder(reminder, commit: true)
+        } catch _ {
+        }
     }
     
     
@@ -79,20 +82,17 @@ class RemindersListViewController : UITableViewController, UITextFieldDelegate
         
         let pred = EventHelper.sharedInstance.eventStore.predicateForRemindersInCalendars(lists)
         
-        EventHelper.sharedInstance.eventStore.fetchRemindersMatchingPredicate(pred, completion: { (objects : [AnyObject]!) -> Void in
+        EventHelper.sharedInstance.eventStore.fetchRemindersMatchingPredicate(pred, completion: { (objects : [EKReminder]?) -> Void in
+        
+            self.reminders = objects!
             
-            if let rem = objects as? [EKReminder] {
-                
-                self.reminders = rem
-            }
-            
-            self.reminders.sort({ (lhs, rhs) -> Bool in
+            self.reminders.sortInPlace({ (lhs, rhs) -> Bool in
                 
                 if lhs.creationDate == nil || rhs.creationDate == nil {
                     return false
                 }
                 
-                return lhs.creationDate?.compare(rhs.creationDate) == NSComparisonResult.OrderedAscending
+                return lhs.creationDate?.compare(rhs.creationDate!) == NSComparisonResult.OrderedAscending
             })
                         
             dispatch_async(dispatch_get_main_queue(), { () -> Void in
@@ -107,7 +107,7 @@ class RemindersListViewController : UITableViewController, UITextFieldDelegate
     // MARK: - Textfield Delegate
     func textFieldShouldReturn(textField: UITextField) -> Bool {
         
-        if count(textField.text) > 0 {
+        if textField.text?.characters.count > 0 {
             self.performSegueWithIdentifier("AddReminder", sender: textField)
         }
         return true
@@ -141,7 +141,7 @@ class RemindersListViewController : UITableViewController, UITextFieldDelegate
         }
         else
         {
-            cell = tableView.dequeueReusableCellWithIdentifier("CreateCell")! as! UITableViewCell
+            cell = tableView.dequeueReusableCellWithIdentifier("CreateCell")! 
             if let textField = cell.contentView.subviews.first as? UITextField {
                 textField.text = nil
             }
@@ -154,7 +154,11 @@ class RemindersListViewController : UITableViewController, UITextFieldDelegate
             let rem = self.reminders[indexPath.row]
             
             var error : NSError?
-            EventHelper.sharedInstance.eventStore.removeReminder(rem, commit: true, error: &error)
+            do {
+                try EventHelper.sharedInstance.eventStore.removeReminder(rem, commit: true)
+            } catch let error1 as NSError {
+                error = error1
+            }
             
             if error != nil {
                 let msg = UIAlertController(title: nil, message: "Error Deleting Reminder: " + error!.description, preferredStyle: UIAlertControllerStyle.Alert)

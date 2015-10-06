@@ -39,7 +39,11 @@ class ListsViewController : BaseListsViewController {
         let calendar = self.sortedLists[indexPath.row]
         
         var error : NSError?
-        EventHelper.sharedInstance.eventStore.removeCalendar(calendar, commit: true, error: &error)
+        do {
+            try EventHelper.sharedInstance.eventStore.removeCalendar(calendar, commit: true)
+        } catch let error1 as NSError {
+            error = error1
+        }
         
         if error != nil {
             let text = error!.description
@@ -51,7 +55,7 @@ class ListsViewController : BaseListsViewController {
         }
     }
     
-    override func tableView(tableView: UITableView, canPerformAction action: Selector, forRowAtIndexPath indexPath: NSIndexPath, withSender sender: AnyObject) -> Bool
+    override func tableView(tableView: UITableView, canPerformAction action: Selector, forRowAtIndexPath indexPath: NSIndexPath, withSender sender: AnyObject?) -> Bool
     {
         let cal = self.sortedLists[indexPath.row]
         
